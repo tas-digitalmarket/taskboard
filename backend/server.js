@@ -348,7 +348,22 @@ async function handleTelegramUpdate(update) {
   if (update.callback_query) {
     const { id, data, message, from } = update.callback_query;
     await telegramApi("answerCallbackQuery", { callback_query_id: id });
-    if (!data || !data.startsWith("status:")) return;
+    if (!data) return;
+
+    if (data.startsWith("cmd:")) {
+      const command = data.split(":")[1];
+      const fakeUpdate = {
+        message: {
+          chat: message.chat,
+          message_thread_id: message.message_thread_id,
+          from: from,
+          text: `/${command}`
+        }
+      };
+      return handleTelegramUpdate(fakeUpdate);
+    }
+
+    if (!data.startsWith("status:")) return;
     const parts = data.split(":");
     const taskId = Number(parts[1]);
     const newStatus = parts[2];
@@ -388,6 +403,15 @@ async function handleTelegramUpdate(update) {
     persistent: true
   };
 
+  const INLINE_MENU = {
+    inline_keyboard: [
+      [
+        { text: "📋 همه وظایف", callback_data: "cmd:tasks" },
+        { text: "📌 وظایف من", callback_data: "cmd:mytasks" }
+      ]
+    ]
+  };
+
   const reply = async (text, options = {}) => {
     const payload = { chat_id: chatId, text, parse_mode: "Markdown", ...options };
     if (threadId) payload.message_thread_id = threadId;
@@ -409,7 +433,7 @@ async function handleTelegramUpdate(update) {
   }
 
   if (text === "/start") {
-    await reply(`👋 Hello! Welcome to the TaskBoard bot.\n\n📋 /tasks — View team tasks\n📌 /mytasks — My assigned tasks\n\nYour Chat ID: \`${userId}\`\n\n🌐 [View Dashboard](https://taskboard-tp8k.onrender.com/)`);
+    await reply(`👋 Hello! Welcome to the TaskBoard bot.\n\n📋 /tasks — View team tasks\n📌 /mytasks — My assigned tasks\n\nYour Chat ID: \`${userId}\`\n\n🌐 [View Dashboard](https://taskboard-tp8k.onrender.com/)`, { reply_markup: INLINE_MENU });
     return;
   }
 
@@ -425,7 +449,7 @@ async function handleTelegramUpdate(update) {
       const emoji = STATUS_EMOJI[t.status] || "❓";
       return `${emoji} *${t.title}*\n👤 ${t.assigneeName}\n[${prog.bar}] ${prog.percent}%\n⏱ ${remaining(t, now)}`;
     });
-    await reply(lines.join("\n\n"));
+    await reply(lines.join("\n\n"), { reply_markup: INLINE_MENU });
     return;
   }
 
