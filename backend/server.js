@@ -74,17 +74,11 @@ function progress(task, now = new Date()) {
 function remaining(task, now = new Date()) {
   let seconds = Math.floor((new Date(task.dueAt).getTime() - now.getTime()) / 1000);
   if (seconds <= 0) {
-    const abs = Math.abs(seconds);
-    const h = Math.floor(abs / 3600);
-    const m = Math.floor((abs % 3600) / 60);
-    return `⏰ مهلت گذشته — ${h}h ${m}m تأخیر`;
+    const d = Math.max(1, Math.ceil(Math.abs(seconds) / 86400));
+    return `⏰ Overdue — ${d} ${d === 1 ? 'day' : 'days'} late`;
   }
-  const d = Math.floor(seconds / 86400);
-  const h = Math.floor((seconds % 86400) / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (d) return `${d}d ${h}h ${m}m باقی‌مانده`;
-  if (h) return `${h}h ${m}m باقی‌مانده`;
-  return `${m}m باقی‌مانده`;
+  const d = Math.max(1, Math.ceil(seconds / 86400));
+  return `${d} ${d === 1 ? 'day' : 'days'} remaining`;
 }
 
 const STATUS_EMOJI = {
@@ -123,14 +117,14 @@ async function sendNotification(task) {
   if (!task.assigneeChatId) return;
   const prog = progress(task);
   const msg = [
-    `📋 *وظیفه جدید به شما اختصاص یافت!*`,
+    `📋 *New Task Assigned!*`,
     ``,
-    `*عنوان:* ${task.title}`,
-    task.description ? `*توضیحات:* ${task.description}` : null,
-    `*مهلت:* ${remaining(task)}`,
-    `*پیشرفت:* [${prog.bar}] ${prog.percent}%`,
+    `*Title:* ${task.title}`,
+    task.description ? `*Description:* ${task.description}` : null,
+    `*Deadline:* ${remaining(task)}`,
+    `*Progress:* [${prog.bar}] ${prog.percent}%`,
     ``,
-    `برای مشاهده داشبورد: /tasks`,
+    `Dashboard command: /tasks`,
   ].filter(Boolean).join("\n");
 
   await telegramApi("sendMessage", {
@@ -139,11 +133,11 @@ async function sendNotification(task) {
     parse_mode: "Markdown",
     reply_markup: {
       inline_keyboard: [[
-        { text: "▶️ شروع", callback_data: `status:${task.id}:started` },
-        { text: "✅ انجام شد", callback_data: `status:${task.id}:done` },
+        { text: "▶️ Start", callback_data: `status:${task.id}:started` },
+        { text: "✅ Done", callback_data: `status:${task.id}:done` },
       ], [
-        { text: "🆘 نیاز به کمک", callback_data: `status:${task.id}:blocked` },
-        { text: "❌ لغو", callback_data: `status:${task.id}:cancelled` },
+        { text: "🆘 Blocked", callback_data: `status:${task.id}:blocked` },
+        { text: "❌ Cancel", callback_data: `status:${task.id}:cancelled` },
       ]],
     },
   });
@@ -326,7 +320,7 @@ async function handleTelegramUpdate(update) {
     await telegramApi("editMessageText", {
       chat_id: message.chat.id,
       message_id: message.message_id,
-      text: `✅ وضعیت به «${newStatus}» تغییر یافت\n📊 [${prog.bar}] ${prog.percent}%\n⏱ ${remaining(task)}`,
+      text: `✅ Status changed to «${newStatus}»\n📊 [${prog.bar}] ${prog.percent}%\n⏱ ${remaining(task)}`,
       parse_mode: "Markdown",
     });
     return;
@@ -342,7 +336,7 @@ async function handleTelegramUpdate(update) {
   if (text === "/start") {
     await telegramApi("sendMessage", {
       chat_id: chatId,
-      text: `👋 سلام! به ربات مدیریت وظایف خوش آمدید.\n\n📋 /tasks — مشاهده وظایف\n📌 /mytasks — وظایف من\n\nشناسه شما: \`${userId}\``,
+      text: `👋 Hello! Welcome to the TaskBoard bot.\n\n📋 /tasks — View team tasks\n📌 /mytasks — My assigned tasks\n\nYour Chat ID: \`${userId}\``,
       parse_mode: "Markdown",
     });
     return;
@@ -351,7 +345,7 @@ async function handleTelegramUpdate(update) {
   if (text === "/tasks") {
     const activeTasks = state.tasks.filter(t => !["done", "cancelled"].includes(t.status));
     if (!activeTasks.length) {
-      await telegramApi("sendMessage", { chat_id: chatId, text: "هیچ وظیفه فعالی وجود ندارد." });
+      await telegramApi("sendMessage", { chat_id: chatId, text: "No active tasks at the moment." });
       return;
     }
     const now = new Date();
@@ -371,7 +365,7 @@ async function handleTelegramUpdate(update) {
   if (text === "/mytasks") {
     const myTasks = state.tasks.filter(t => t.assigneeChatId === userId && !["done", "cancelled"].includes(t.status));
     if (!myTasks.length) {
-      await telegramApi("sendMessage", { chat_id: chatId, text: "شما هیچ وظیفه فعالی ندارید." });
+      await telegramApi("sendMessage", { chat_id: chatId, text: "You have no active tasks." });
       return;
     }
     const now = new Date();
@@ -383,10 +377,10 @@ async function handleTelegramUpdate(update) {
         parse_mode: "Markdown",
         reply_markup: {
           inline_keyboard: [[
-            { text: "▶️ شروع", callback_data: `status:${t.id}:started` },
-            { text: "✅ انجام شد", callback_data: `status:${t.id}:done` },
+            { text: "▶️ Start", callback_data: `status:${t.id}:started` },
+            { text: "✅ Done", callback_data: `status:${t.id}:done` },
           ], [
-            { text: "🆘 نیاز به کمک", callback_data: `status:${t.id}:blocked` },
+            { text: "🆘 Blocked", callback_data: `status:${t.id}:blocked` },
           ]],
         },
       });
@@ -409,14 +403,14 @@ function scheduleReminders() {
           const prog = progress(task, now);
           telegramApi("sendMessage", {
             chat_id: task.assigneeChatId,
-            text: `⚠️ *مهلت وظیفه «${task.title}» به پایان رسید!*\n[${prog.bar}] ${prog.percent}%`,
+            text: `⚠️ *Deadline for «${task.title}» has passed!*\n[${prog.bar}] ${prog.percent}%`,
             parse_mode: "Markdown",
           }).catch(() => {});
         } else if (rem > 0 && Math.abs(minutesLeft - rem) < 1) {
           // Upcoming reminder
           telegramApi("sendMessage", {
             chat_id: task.assigneeChatId,
-            text: `⏰ یادآوری: وظیفه «${task.title}» — ${rem} دقیقه تا مهلت`,
+            text: `⏰ Reminder: «${task.title}» — ${rem} minutes left`,
             parse_mode: "Markdown",
           }).catch(() => {});
         }

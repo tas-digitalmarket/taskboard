@@ -51,17 +51,9 @@ function formatCountdown(dueAt) {
   if (overdue) ms = Math.abs(ms);
 
   const totalSec = Math.floor(ms / 1000);
-  const days  = Math.floor(totalSec / 86400);
-  const hours = Math.floor((totalSec % 86400) / 3600);
-  const mins  = Math.floor((totalSec % 3600) / 60);
-  const secs  = totalSec % 60;
-
-  const pad = n => String(n).padStart(2, '0');
-
-  if (days > 0) {
-    return { text: `${days}د ${pad(hours)}:${pad(mins)}:${pad(secs)}`, overdue };
-  }
-  return { text: `${pad(hours)}:${pad(mins)}:${pad(secs)}`, overdue };
+  const days = Math.max(1, Math.ceil(totalSec / 86400));
+  
+  return { text: `${days} روز`, overdue };
 }
 
 // ─── Get initials from name ───────────────────────────────────────────────
