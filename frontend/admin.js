@@ -6,6 +6,7 @@
 const API = '';
 let adminPassword = '';
 let allTasks = [];
+let allMembers = [];
 
 const STATUS_LABELS = {
   pending:   { label: 'در انتظار',    icon: '⏳' },
@@ -28,6 +29,7 @@ function doLogin() {
     document.getElementById('auth-gate').classList.remove('active');
     document.getElementById('admin-main').style.display = 'block';
     loadTasks();
+    loadMembers();
   }).catch(() => {
     document.getElementById('auth-error').classList.remove('hidden');
   });
@@ -50,7 +52,8 @@ async function createTask(e) {
   e.preventDefault();
 
   const title     = document.getElementById('f-title').value.trim();
-  const assignee  = document.getElementById('f-assignee').value.trim();
+  const select    = document.getElementById('f-assignee-select');
+  const assignee  = select.options[select.selectedIndex]?.text.split(' - ')[0].trim() || 'تیم';
   const desc      = document.getElementById('f-desc').value.trim();
   const deadline  = document.getElementById('f-deadline').value.trim();
   const chatId    = document.getElementById('f-chatid').value.trim();
@@ -78,7 +81,7 @@ async function createTask(e) {
       body: JSON.stringify({
         title,
         description: desc,
-        assigneeName: assignee || 'تیم',
+        assigneeName: assignee === '-- انتخاب کنید --' ? 'تیم' : assignee,
         assigneeChatId: chatId || null,
         deadline,
       }),
@@ -134,6 +137,91 @@ async function loadTasks() {
     }
   } catch (err) {
     console.error(err);
+  }
+}
+
+// ─── Members Management ───────────────────────────────────────────────────
+async function loadMembers() {
+  try {
+    const res = await fetch(`${API}/api/members`, { headers: { 'x-admin-password': adminPassword } });
+    const data = await res.json();
+    if (data.ok) {
+      allMembers = data.members || [];
+      renderMembersList();
+    }
+  } catch (err) { console.error(err); }
+}
+
+function renderMembersList() {
+  const select = document.getElementById('f-assignee-select');
+  select.innerHTML = '<option value="">-- انتخاب کنید --</option>';
+  allMembers.forEach(m => {
+    select.innerHTML += `<option value="${m.id}">${escapeHtml(m.name)}${m.chatId ? ' - '+escapeHtml(m.chatId) : ''}</option>`;
+  });
+
+  const list = document.getElementById('members-list');
+  if (!allMembers.length) {
+    list.innerHTML = '<div style="color:var(--text-muted);font-size:0.8rem">هیچ عضوی ثبت نشده است.</div>';
+    return;
+  }
+  list.innerHTML = allMembers.map(m => `
+    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg-input);padding:10px 12px;border-radius:6px;border:1px solid var(--border)">
+      <div>
+        <div style="font-weight:600;font-size:0.9rem">${escapeHtml(m.name)}</div>
+        ${m.chatId ? `<div style="font-size:0.75rem;color:var(--text-muted)">ID: ${escapeHtml(m.chatId)}</div>` : ''}
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="deleteMember(${m.id})">❌</button>
+    </div>
+  `).join('');
+}
+
+async function createMember(e) {
+  e.preventDefault();
+  const name = document.getElementById('m-name').value.trim();
+  const chatId = document.getElementById('m-chatid').value.trim();
+  if (!name) return;
+
+  try {
+    const res = await fetch(`${API}/api/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword },
+      body: JSON.stringify({ name, chatId }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('m-name').value = '';
+      document.getElementById('m-chatid').value = '';
+      showToast('✅ عضو با موفقیت اضافه شد', 'success');
+      loadMembers();
+    } else {
+      showToast('❌ خطا در افزودن عضو', 'error');
+    }
+  } catch (err) { showToast('❌ خطا در ارتباط', 'error'); }
+}
+
+async function deleteMember(id) {
+  if (!confirm('آیا از حذف این عضو مطمئن هستید؟')) return;
+  try {
+    const res = await fetch(`${API}/api/members/${id}`, {
+      method: 'DELETE',
+      headers: { 'x-admin-password': adminPassword },
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showToast('🗑 عضو حذف شد', 'info');
+      loadMembers();
+    }
+  } catch (err) { showToast('❌ خطا در حذف', 'error'); }
+}
+
+function onAssigneeChange() {
+  const sel = document.getElementById('f-assignee-select');
+  const id = Number(sel.value);
+  const mem = allMembers.find(m => m.id === id);
+  if (mem) {
+    document.getElementById('f-chatid').value = mem.chatId || '';
+  } else {
+    document.getElementById('f-chatid').value = '';
   }
 }
 

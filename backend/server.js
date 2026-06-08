@@ -35,9 +35,13 @@ const REMINDER_MINUTES = get("REMINDER_MINUTES", "1440,180,30,0")
 // ─── STATE ───────────────────────────────────────────────────────────────────
 const statePath = path.join(__dirname, "tasks.json");
 function loadState() {
-  if (!fs.existsSync(statePath)) return { nextId: 1, offset: 0, tasks: [] };
-  try { return JSON.parse(fs.readFileSync(statePath, "utf8")); }
-  catch { return { nextId: 1, offset: 0, tasks: [] }; }
+  const defaultState = { nextId: 1, nextMemberId: 1, offset: 0, tasks: [], members: [] };
+  if (!fs.existsSync(statePath)) return defaultState;
+  try { 
+    const data = JSON.parse(fs.readFileSync(statePath, "utf8"));
+    return { ...defaultState, ...data };
+  }
+  catch { return defaultState; }
 }
 function saveState() {
   fs.writeFileSync(statePath, JSON.stringify(state, null, 2), "utf8");
@@ -125,6 +129,7 @@ async function sendNotification(task) {
     `*Progress:* [${prog.bar}] ${prog.percent}%`,
     ``,
     `Dashboard command: /tasks`,
+    `\n🌐 [View Dashboard](https://taskboard-tp8k.onrender.com/)`
   ].filter(Boolean).join("\n");
 
   await telegramApi("sendMessage", {
@@ -288,6 +293,39 @@ const server = http.createServer(async (req, res) => {
     return sendJSON(res, 200, { ok: true });
   }
 
+  // ── API: GET /api/members ──
+  if (pathname === "/api/members" && req.method === "GET") {
+    if (!checkAdmin(req)) return sendJSON(res, 401, { ok: false, error: "Unauthorized" });
+    return sendJSON(res, 200, { ok: true, members: state.members });
+  }
+
+  // ── API: POST /api/members ──
+  if (pathname === "/api/members" && req.method === "POST") {
+    if (!checkAdmin(req)) return sendJSON(res, 401, { ok: false, error: "Unauthorized" });
+    const body = await readBody(req);
+    if (!body.name) return sendJSON(res, 400, { ok: false, error: "Name is required" });
+    const member = {
+      id: state.nextMemberId++,
+      name: body.name.trim(),
+      chatId: body.chatId ? String(body.chatId).trim() : ""
+    };
+    state.members.push(member);
+    saveState();
+    return sendJSON(res, 201, { ok: true, member });
+  }
+
+  // ── API: DELETE /api/members/:id ──
+  const memberIdMatch = pathname.match(/^\/api\/members\/(\d+)$/);
+  if (memberIdMatch && req.method === "DELETE") {
+    if (!checkAdmin(req)) return sendJSON(res, 401, { ok: false, error: "Unauthorized" });
+    const id = Number(memberIdMatch[1]);
+    const idx = state.members.findIndex(m => m.id === id);
+    if (idx === -1) return sendJSON(res, 404, { ok: false, error: "Member not found" });
+    state.members.splice(idx, 1);
+    saveState();
+    return sendJSON(res, 200, { ok: true });
+  }
+
   // ── Telegram Webhook ──
   if (pathname === WEBHOOK_PATH && req.method === "POST") {
     const body = await readBody(req);
@@ -320,7 +358,7 @@ async function handleTelegramUpdate(update) {
     await telegramApi("editMessageText", {
       chat_id: message.chat.id,
       message_id: message.message_id,
-      text: `✅ Status changed to «${newStatus}»\n📊 [${prog.bar}] ${prog.percent}%\n⏱ ${remaining(task)}`,
+      text: `✅ Status changed to «${newStatus}»\n📊 [${prog.bar}] ${prog.percent}%\n⏱ ${remaining(task)}\n\n🌐 [View Dashboard](https://taskboard-tp8k.onrender.com/)`,
       parse_mode: "Markdown",
     });
     return;
@@ -336,7 +374,7 @@ async function handleTelegramUpdate(update) {
   if (text === "/start") {
     await telegramApi("sendMessage", {
       chat_id: chatId,
-      text: `👋 Hello! Welcome to the TaskBoard bot.\n\n📋 /tasks — View team tasks\n📌 /mytasks — My assigned tasks\n\nYour Chat ID: \`${userId}\``,
+      text: `👋 Hello! Welcome to the TaskBoard bot.\n\n📋 /tasks — View team tasks\n📌 /mytasks — My assigned tasks\n\nYour Chat ID: \`${userId}\`\n\n🌐 [View Dashboard](https://taskboard-tp8k.onrender.com/)`,
       parse_mode: "Markdown",
     });
     return;
@@ -373,7 +411,7 @@ async function handleTelegramUpdate(update) {
       const prog = progress(t, now);
       await telegramApi("sendMessage", {
         chat_id: chatId,
-        text: `📌 *${t.title}*\n${t.description || ""}\n\n[${prog.bar}] ${prog.percent}%\n⏱ ${remaining(t, now)}`,
+        text: `📌 *${t.title}*\n${t.description || ""}\n\n[${prog.bar}] ${prog.percent}%\n⏱ ${remaining(t, now)}\n\n🌐 [View Dashboard](https://taskboard-tp8k.onrender.com/)`,
         parse_mode: "Markdown",
         reply_markup: {
           inline_keyboard: [[
