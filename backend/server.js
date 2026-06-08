@@ -35,7 +35,7 @@ const REMINDER_MINUTES = get("REMINDER_MINUTES", "1440,180,30,0")
 // ─── STATE ───────────────────────────────────────────────────────────────────
 const statePath = path.join(__dirname, "tasks.json");
 function loadState() {
-  const defaultState = { nextId: 1, nextMemberId: 1, offset: 0, tasks: [], members: [] };
+  const defaultState = { nextId: 1, nextMemberId: 1, offset: 0, tasks: [], members: [], allowedGroup: null };
   if (!fs.existsSync(statePath)) return defaultState;
   try { 
     const data = JSON.parse(fs.readFileSync(statePath, "utf8"));
@@ -373,13 +373,36 @@ async function handleTelegramUpdate(update) {
   const chatId = msg.chat.id;
   const threadId = msg.message_thread_id;
   const userId = String(msg.from.id);
-  const text = msg.text.trim();
+  let text = msg.text.trim();
+  if (text === "📋 /tasks") text = "/tasks";
+  if (text === "📌 /mytasks") text = "/mytasks";
+  const isGroup = msg.chat.type === "group" || msg.chat.type === "supergroup";
+
+  const BOT_KEYBOARD = {
+    keyboard: [[{ text: "📋 /tasks" }, { text: "📌 /mytasks" }]],
+    resize_keyboard: true,
+    persistent: true
+  };
 
   const reply = async (text, options = {}) => {
     const payload = { chat_id: chatId, text, parse_mode: "Markdown", ...options };
     if (threadId) payload.message_thread_id = threadId;
+    if (!payload.reply_markup) payload.reply_markup = BOT_KEYBOARD;
     return telegramApi("sendMessage", payload);
   };
+
+  if (isGroup && text === "/bindtopic") {
+    state.allowedGroup = { chatId, threadId };
+    saveState();
+    await reply("✅ ربات با موفقیت روی این تاپیک قفل شد. از این پس فقط به پیام‌های این تاپیک پاسخ می‌دهد.");
+    return;
+  }
+
+  if (isGroup && state.allowedGroup) {
+    if (chatId !== state.allowedGroup.chatId || threadId !== state.allowedGroup.threadId) {
+      return;
+    }
+  }
 
   if (text === "/start") {
     await reply(`👋 Hello! Welcome to the TaskBoard bot.\n\n📋 /tasks — View team tasks\n📌 /mytasks — My assigned tasks\n\nYour Chat ID: \`${userId}\`\n\n🌐 [View Dashboard](https://taskboard-tp8k.onrender.com/)`);
