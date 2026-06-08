@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: taskboard
+    runtime: node
+    plan: free
+    buildCommand: echo "No build needed"
+    startCommand: npm start
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_USER_IDS
+        sync: false
+      - key: REMINDER_MINUTES
+        value: "1440,180,30,0"
+      - key: WEBHOOK_PATH
+        value: "/webhook"
+      - key: NODE_ENV
+        value: "production"

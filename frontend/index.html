@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskBoard — داشبورد تیم</title>
+  <meta name="description" content="مشاهده وظایف تیم، پیشرفت و مهلت‌ها به صورت زنده" />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>" />
+</head>
+<body>
+<div class="app-wrapper">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">📋</div>
+        <span class="logo-text">TaskBoard</span>
+      </div>
+      <div class="header-actions">
+        <span id="live-indicator" class="stat-chip" style="gap:6px">
+          <span style="width:8px;height:8px;border-radius:50%;background:#10b981;animation:pulse-dot 2s infinite;display:inline-block"></span>
+          <span style="font-size:0.8rem;color:var(--text-secondary)">زنده</span>
+        </span>
+        <a href="/admin" class="btn btn-primary btn-sm">🔧 پنل ادمین</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stats-inner">
+      <div class="stat-chip active" data-filter="all" id="filter-all">
+        <span class="stat-dot" style="background:#6366f1"></span>
+        همه
+        <span class="stat-count" id="count-all">0</span>
+      </div>
+      <div class="stat-chip" data-filter="pending" id="filter-pending">
+        <span class="stat-dot" style="background:#3b82f6"></span>
+        در انتظار
+        <span class="stat-count" id="count-pending">0</span>
+      </div>
+      <div class="stat-chip" data-filter="started" id="filter-started">
+        <span class="stat-dot" style="background:#f59e0b"></span>
+        در حال انجام
+        <span class="stat-count" id="count-started">0</span>
+      </div>
+      <div class="stat-chip" data-filter="blocked" id="filter-blocked">
+        <span class="stat-dot" style="background:#ef4444"></span>
+        نیاز به کمک
+        <span class="stat-count" id="count-blocked">0</span>
+      </div>
+      <div class="stat-chip" data-filter="done" id="filter-done">
+        <span class="stat-dot" style="background:#10b981"></span>
+        انجام شده
+        <span class="stat-count" id="count-done">0</span>
+      </div>
+      <div class="stat-chip" data-filter="cancelled" id="filter-cancelled">
+        <span class="stat-dot" style="background:#6b7280"></span>
+        لغو شده
+        <span class="stat-count" id="count-cancelled">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="section-header">
+      <span class="section-title">وظایف تیم</span>
+      <span id="last-update" class="text-muted"></span>
+    </div>
+
+    <!-- Loading skeletons -->
+    <div id="loading" class="loading-grid">
+      <div class="skeleton" style="height:220px"></div>
+      <div class="skeleton" style="height:220px"></div>
+      <div class="skeleton" style="height:220px"></div>
+    </div>
+
+    <!-- Task grid -->
+    <div id="tasks-grid" class="tasks-grid hidden"></div>
+
+    <!-- Empty state -->
+    <div id="empty-state" class="tasks-grid hidden">
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div class="empty-title">هیچ وظیفه‌ای یافت نشد</div>
+        <div class="empty-subtitle">فیلتر دیگری را امتحان کنید یا از پنل ادمین وظیفه جدید بسازید</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<style>
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+  50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+}
+</style>
+
+<script src="/app.js"></script>
+</body>
+</html>

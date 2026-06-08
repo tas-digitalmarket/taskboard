@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskBoard — پنل ادمین</title>
+  <meta name="description" content="مدیریت وظایف تیم — ساخت و حذف وظایف" />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔧</text></svg>" />
+</head>
+<body>
+<div class="app-wrapper">
+
+  <!-- Auth Gate -->
+  <div id="auth-gate" class="modal-overlay active">
+    <div class="modal" style="max-width:380px">
+      <div style="text-align:center; margin-bottom:1.5rem">
+        <div style="font-size:3rem; margin-bottom:0.5rem">🔐</div>
+        <h2 style="font-size:1.3rem; font-weight:700">ورود به پنل ادمین</h2>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px">رمز عبور ادمین را وارد کنید</p>
+      </div>
+      <div class="form-group">
+        <input type="password" id="auth-input" class="form-control" placeholder="رمز عبور ..." autofocus />
+      </div>
+      <div id="auth-error" class="hidden" style="color:var(--color-blocked);font-size:0.82rem;margin-bottom:0.8rem;text-align:center">
+        رمز عبور اشتباه است
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="doLogin()">ورود</button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">🔧</div>
+        <span class="logo-text">پنل ادمین</span>
+      </div>
+      <div class="header-actions">
+        <a href="/" class="btn btn-ghost btn-sm">← داشبورد تیم</a>
+        <button class="btn btn-danger btn-sm" onclick="doLogout()">خروج</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="main" id="admin-main" style="display:none">
+
+    <!-- Create Task Form -->
+    <div class="admin-form-card">
+      <div class="admin-form-title">
+        ➕ ایجاد وظیفه جدید
+      </div>
+
+      <form id="task-form" onsubmit="createTask(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">عنوان وظیفه *</label>
+            <input type="text" id="f-title" class="form-control" placeholder="مثال: بررسی کد فرانت‌اند" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">مسئول وظیفه</label>
+            <input type="text" id="f-assignee" class="form-control" placeholder="نام عضو تیم" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">توضیحات</label>
+          <textarea id="f-desc" class="form-control" placeholder="توضیحات اختیاری ..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">مهلت *</label>
+            <input type="text" id="f-deadline" class="form-control" placeholder="مثال: 30m / 6h / 2d" required />
+            <div class="form-hint">فرمت‌ها: 30m | 6h | 2d | 2026-06-15 18:00</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Chat ID تلگرام (اختیاری)</label>
+            <input type="text" id="f-chatid" class="form-control" placeholder="برای ارسال نوتیفیکیشن" />
+            <div class="form-hint">با /start در ربات تلگرام ID خود را بیابید</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;align-items:center">
+          <button type="submit" class="btn btn-primary" id="submit-btn">
+            <span id="submit-icon">✅</span>
+            <span id="submit-label">ساخت وظیفه</span>
+          </button>
+          <button type="button" class="btn btn-ghost" onclick="resetForm()">🗑 پاک کردن</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Quick deadline buttons -->
+    <div style="margin-bottom:2rem">
+      <div class="section-title" style="margin-bottom:0.75rem">⚡ انتخاب سریع مهلت</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="setDeadline('30m')">۳۰ دقیقه</button>
+        <button class="btn btn-ghost btn-sm" onclick="setDeadline('1h')">۱ ساعت</button>
+        <button class="btn btn-ghost btn-sm" onclick="setDeadline('2h')">۲ ساعت</button>
+        <button class="btn btn-ghost btn-sm" onclick="setDeadline('4h')">۴ ساعت</button>
+        <button class="btn btn-ghost btn-sm" onclick="setDeadline('8h')">۸ ساعت</button>
+        <button class="btn btn-ghost btn-sm" onclick="setDeadline('1d')">۱ روز</button>
+        <button class="btn btn-ghost btn-sm" onclick="setDeadline('3d')">۳ روز</button>
+        <button class="btn btn-ghost btn-sm" onclick="setDeadline('7d')">۱ هفته</button>
+      </div>
+    </div>
+
+    <!-- Tasks Table -->
+    <div>
+      <div class="section-header">
+        <span class="section-title">مدیریت وظایف</span>
+        <button class="btn btn-ghost btn-sm" onclick="loadTasks()">🔄 بروزرسانی</button>
+      </div>
+      <div id="admin-tasks-list"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="/admin.js"></script>
+</body>
+</html>
