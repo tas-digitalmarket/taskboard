@@ -376,10 +376,14 @@ async function handleTelegramUpdate(update) {
   let text = msg.text.trim();
   if (text === "📋 /tasks") text = "/tasks";
   if (text === "📌 /mytasks") text = "/mytasks";
+  if (text === "🚀 /start") text = "/start";
   const isGroup = msg.chat.type === "group" || msg.chat.type === "supergroup";
 
   const BOT_KEYBOARD = {
-    keyboard: [[{ text: "📋 /tasks" }, { text: "📌 /mytasks" }]],
+    keyboard: [
+      [{ text: "📋 /tasks" }, { text: "📌 /mytasks" }],
+      [{ text: "🚀 /start" }]
+    ],
     resize_keyboard: true,
     persistent: true
   };

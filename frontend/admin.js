@@ -194,9 +194,9 @@ async function createMember(e) {
       showToast('✅ عضو با موفقیت اضافه شد', 'success');
       loadMembers();
     } else {
-      showToast('❌ خطا در افزودن عضو', 'error');
+      showToast('❌ ' + (data.error || 'خطا در افزودن عضو'), 'error');
     }
-  } catch (err) { showToast('❌ خطا در ارتباط', 'error'); }
+  } catch (err) { showToast('❌ خطا در ارتباط: ' + err.message, 'error'); }
 }
 
 async function deleteMember(id) {
