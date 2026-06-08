@@ -371,22 +371,25 @@ async function handleTelegramUpdate(update) {
   const msg = update.message;
   if (!msg || !msg.text) return;
   const chatId = msg.chat.id;
+  const threadId = msg.message_thread_id;
   const userId = String(msg.from.id);
   const text = msg.text.trim();
 
+  const reply = async (text, options = {}) => {
+    const payload = { chat_id: chatId, text, parse_mode: "Markdown", ...options };
+    if (threadId) payload.message_thread_id = threadId;
+    return telegramApi("sendMessage", payload);
+  };
+
   if (text === "/start") {
-    await telegramApi("sendMessage", {
-      chat_id: chatId,
-      text: `👋 Hello! Welcome to the TaskBoard bot.\n\n📋 /tasks — View team tasks\n📌 /mytasks — My assigned tasks\n\nYour Chat ID: \`${userId}\`\n\n🌐 [View Dashboard](https://taskboard-tp8k.onrender.com/)`,
-      parse_mode: "Markdown",
-    });
+    await reply(`👋 Hello! Welcome to the TaskBoard bot.\n\n📋 /tasks — View team tasks\n📌 /mytasks — My assigned tasks\n\nYour Chat ID: \`${userId}\`\n\n🌐 [View Dashboard](https://taskboard-tp8k.onrender.com/)`);
     return;
   }
 
   if (text === "/tasks") {
     const activeTasks = state.tasks.filter(t => !["done", "cancelled"].includes(t.status));
     if (!activeTasks.length) {
-      await telegramApi("sendMessage", { chat_id: chatId, text: "No active tasks at the moment." });
+      await reply("No active tasks at the moment.");
       return;
     }
     const now = new Date();
@@ -395,27 +398,20 @@ async function handleTelegramUpdate(update) {
       const emoji = STATUS_EMOJI[t.status] || "❓";
       return `${emoji} *${t.title}*\n👤 ${t.assigneeName}\n[${prog.bar}] ${prog.percent}%\n⏱ ${remaining(t, now)}`;
     });
-    await telegramApi("sendMessage", {
-      chat_id: chatId,
-      text: lines.join("\n\n"),
-      parse_mode: "Markdown",
-    });
+    await reply(lines.join("\n\n"));
     return;
   }
 
   if (text === "/mytasks") {
     const myTasks = state.tasks.filter(t => t.assigneeChatId === userId && !["done", "cancelled"].includes(t.status));
     if (!myTasks.length) {
-      await telegramApi("sendMessage", { chat_id: chatId, text: "You have no active tasks." });
+      await reply("You have no active tasks.");
       return;
     }
     const now = new Date();
     for (const t of myTasks) {
       const prog = progress(t, now);
-      await telegramApi("sendMessage", {
-        chat_id: chatId,
-        text: `📌 *${t.title}*\n${t.description || ""}\n\n[${prog.bar}] ${prog.percent}%\n⏱ ${remaining(t, now)}\n\n🌐 [View Dashboard](https://taskboard-tp8k.onrender.com/)`,
-        parse_mode: "Markdown",
+      await reply(`📌 *${t.title}*\n${t.description || ""}\n\n[${prog.bar}] ${prog.percent}%\n⏱ ${remaining(t, now)}\n\n🌐 [View Dashboard](https://taskboard-tp8k.onrender.com/)`, {
         reply_markup: {
           inline_keyboard: [[
             { text: "▶️ Start", callback_data: `status:${t.id}:started` },
