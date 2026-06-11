@@ -47,7 +47,11 @@ function loadState() {
   catch { return defaultState; }
 }
 function saveState() {
-  fs.writeFileSync(statePath, JSON.stringify(state, null, 2), "utf8");
+  try {
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2), "utf8");
+  } catch (err) {
+    console.error("Error writing to state file (DATA_PATH):", err);
+  }
 }
 const state = loadState();
 
