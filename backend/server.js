@@ -440,7 +440,7 @@ async function handleTelegramUpdate(update) {
   }
 
   if (text === "/start") {
-    await reply(`👋 Hello! Welcome to the TaskBoard bot.\n\n📋 /tasks — View team tasks\n📌 /mytasks — My assigned tasks\n\nYour Chat ID: \`${userId}\`\n\n🌐 [View Dashboard](https://taskboard-tp8k.onrender.com/)`, { reply_markup: INLINE_MENU });
+    await reply(`👋 Hello! Welcome to the TaskBoard bot.\n\n📋 /tasks — View team tasks\n📌 /mytasks — My assigned tasks\n\nYour Chat ID: \`${userId}\`\n\n🌐 [View Dashboard](${WEBHOOK_BASE})`, { reply_markup: INLINE_MENU });
     return;
   }
 
