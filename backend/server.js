@@ -27,13 +27,16 @@ const ADMIN_IDS = new Set(
   get("ADMIN_USER_IDS", "").split(",").map(s => s.trim()).filter(Boolean)
 );
 const ADMIN_PASSWORD = get("ADMIN_PASSWORD", "admin123");
-const WEBHOOK_BASE = get("WEBHOOK_URL") || get("RENDER_EXTERNAL_URL") || "";
+let WEBHOOK_BASE = get("WEBHOOK_URL") || get("RENDER_EXTERNAL_URL") || "";
+if (!WEBHOOK_BASE && get("RAILWAY_PUBLIC_DOMAIN")) {
+  WEBHOOK_BASE = "https://" + get("RAILWAY_PUBLIC_DOMAIN");
+}
 const WEBHOOK_PATH = get("WEBHOOK_PATH", "/webhook");
 const REMINDER_MINUTES = get("REMINDER_MINUTES", "1440,180,30,0")
   .split(",").map(Number).filter(Number.isFinite);
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
-const statePath = path.join(__dirname, "tasks.json");
+const statePath = get("DATA_PATH", path.join(__dirname, "tasks.json"));
 function loadState() {
   const defaultState = { nextId: 1, nextMemberId: 1, offset: 0, tasks: [], members: [], allowedGroup: null };
   if (!fs.existsSync(statePath)) return defaultState;
