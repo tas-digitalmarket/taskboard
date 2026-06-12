@@ -74,8 +74,7 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">مهلت *</label>
-            <input type="text" id="f-deadline" class="form-control" placeholder="مثال: 30m / 6h / 2d" required />
-            <div class="form-hint">فرمت‌ها: 30m | 6h | 2d | 2026-06-15 18:00</div>
+            <input type="text" id="f-deadline" class="form-control" placeholder="مثال: 1d / 3d" required />
           </div>
           <div class="form-group">
             <label class="form-label">Chat ID تلگرام (اختیاری)</label>
@@ -127,14 +126,9 @@
         <div id="members-list" style="margin-top:1.5rem;display:grid;gap:8px"></div>
       </div>
 
-      <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <div class="section-header">
         <span class="section-title">مدیریت وظایف</span>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <select id="filter-assignee" class="form-control" style="width:auto; padding:4px 8px; font-size:0.85rem;" onchange="renderAdminList()">
-            <option value="">همه افراد</option>
-          </select>
-          <button class="btn btn-ghost btn-sm" onclick="loadTasks()">🔄 بروزرسانی</button>
-        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadTasks()">🔄 بروزرسانی</button>
       </div>
       <div id="admin-tasks-list"></div>
     </div>
@@ -145,6 +139,6 @@
 <!-- Toast -->
 <div class="toast-container" id="toast-container"></div>
 
-<script src="/admin.js?v=4"></script>
+<script src="/admin.js?v=5"></script>
 </body>
 </html>

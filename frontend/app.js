@@ -24,6 +24,7 @@ async function fetchTasks() {
     const data = await res.json();
     if (data.ok) {
       allTasks = data.tasks;
+      updateAssigneeDropdown();
       renderDashboard();
       updateLastTime();
     }
@@ -129,13 +130,38 @@ function renderCard(task) {
   return card;
 }
 
+// ─── Extract unique assignees ─────────────────────────────────────────────
+function updateAssigneeDropdown() {
+  const select = document.getElementById('filter-dashboard-assignee');
+  if (!select) return;
+  const currentVal = select.value;
+  
+  const assignees = new Set();
+  allTasks.forEach(t => {
+    if (t.assigneeName && t.assigneeName !== 'تیم') assignees.add(t.assigneeName);
+  });
+  
+  select.innerHTML = '<option value="">همه افراد</option>';
+  Array.from(assignees).sort().forEach(name => {
+    select.innerHTML += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
+  });
+  
+  if (assignees.has(currentVal)) {
+    select.value = currentVal;
+  }
+}
+
 // ─── Render dashboard ─────────────────────────────────────────────────────
 function renderDashboard() {
   updateCounts();
 
-  const filtered = currentFilter === 'all'
-    ? allTasks
-    : allTasks.filter(t => t.status === currentFilter);
+  const assigneeFilter = document.getElementById('filter-dashboard-assignee')?.value || '';
+
+  const filtered = allTasks.filter(t => {
+    const matchStatus = currentFilter === 'all' || t.status === currentFilter;
+    const matchAssignee = assigneeFilter === '' || t.assigneeName === assigneeFilter;
+    return matchStatus && matchAssignee;
+  });
 
   const loading = document.getElementById('loading');
   const grid = document.getElementById('tasks-grid');

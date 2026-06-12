@@ -67,7 +67,12 @@
   <!-- Main -->
   <main class="main">
     <div class="section-header">
-      <span class="section-title">وظایف تیم</span>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span class="section-title">وظایف تیم</span>
+        <select id="filter-dashboard-assignee" class="form-control" style="width:auto; padding:4px 8px; font-size:0.85rem;" onchange="renderDashboard()">
+          <option value="">همه افراد</option>
+        </select>
+      </div>
       <span id="last-update" class="text-muted"></span>
     </div>
 
@@ -102,6 +107,6 @@
 }
 </style>
 
-<script src="/app.js"></script>
+<script src="/app.js?v=2"></script>
 </body>
 </html>
