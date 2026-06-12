@@ -244,7 +244,7 @@ const server = http.createServer(async (req, res) => {
       progress: progress(t, now),
       remaining: remaining(t, now),
     }));
-    return sendJSON(res, 200, { ok: true, tasks });
+    return sendJSON(res, 200, { ok: true, tasks, serverTime: now.getTime() });
   }
 
   // ── API: POST /api/tasks ──

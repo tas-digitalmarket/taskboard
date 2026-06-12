@@ -7,6 +7,11 @@ const API = '';
 let adminPassword = '';
 let allTasks = [];
 let allMembers = [];
+let clockOffset = 0;
+
+function getServerTime() {
+  return Date.now() + clockOffset;
+}
 
 const STATUS_LABELS = {
   pending:   { label: 'در انتظار',    icon: '⏳' },
@@ -132,6 +137,9 @@ async function loadTasks() {
     const res = await fetch(`${API}/api/tasks`);
     const data = await res.json();
     if (data.ok) {
+      if (data.serverTime) {
+        clockOffset = data.serverTime - Date.now();
+      }
       allTasks = data.tasks;
       renderAdminList();
     }
@@ -238,7 +246,7 @@ function renderAdminList() {
     return;
   }
 
-  const now = new Date();
+  const now = new Date(getServerTime());
 
   container.innerHTML = `
     <div style="overflow-x:auto; border-radius:var(--radius-lg); border:1px solid var(--border)">

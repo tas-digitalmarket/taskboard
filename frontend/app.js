@@ -7,6 +7,11 @@ const API = '';
 let allTasks = [];
 let currentFilter = 'all';
 let pollInterval = null;
+let clockOffset = 0;
+
+function getServerTime() {
+  return Date.now() + clockOffset;
+}
 
 // ─── Status config ────────────────────────────────────────────────────────
 const STATUS = {
@@ -23,6 +28,9 @@ async function fetchTasks() {
     const res = await fetch(`${API}/api/tasks`);
     const data = await res.json();
     if (data.ok) {
+      if (data.serverTime) {
+        clockOffset = data.serverTime - Date.now();
+      }
       allTasks = data.tasks;
       updateAssigneeDropdown();
       renderDashboard();
@@ -35,7 +43,7 @@ async function fetchTasks() {
 
 // ─── Compute progress ─────────────────────────────────────────────────────
 function computeProgress(task) {
-  const now = Date.now();
+  const now = getServerTime();
   const start = new Date(task.createdAt).getTime();
   const due = new Date(task.dueAt).getTime();
   const total = Math.max(due - start, 1);
@@ -46,7 +54,7 @@ function computeProgress(task) {
 
 // ─── Format countdown ─────────────────────────────────────────────────────
 function formatCountdown(dueAt) {
-  const now = Date.now();
+  const now = getServerTime();
   let ms = new Date(dueAt).getTime() - now;
   const overdue = ms < 0;
   if (overdue) ms = Math.abs(ms);
