@@ -127,9 +127,14 @@
         <div id="members-list" style="margin-top:1.5rem;display:grid;gap:8px"></div>
       </div>
 
-      <div class="section-header">
+      <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
         <span class="section-title">مدیریت وظایف</span>
-        <button class="btn btn-ghost btn-sm" onclick="loadTasks()">🔄 بروزرسانی</button>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <select id="filter-assignee" class="form-control" style="width:auto; padding:4px 8px; font-size:0.85rem;" onchange="renderAdminList()">
+            <option value="">همه افراد</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="loadTasks()">🔄 بروزرسانی</button>
+        </div>
       </div>
       <div id="admin-tasks-list"></div>
     </div>
@@ -140,6 +145,6 @@
 <!-- Toast -->
 <div class="toast-container" id="toast-container"></div>
 
-<script src="/admin.js?v=3"></script>
+<script src="/admin.js?v=4"></script>
 </body>
 </html>

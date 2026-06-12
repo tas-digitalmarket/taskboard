@@ -155,8 +155,15 @@ async function loadMembers() {
 function renderMembersList() {
   const select = document.getElementById('f-assignee-select');
   select.innerHTML = '<option value="">-- انتخاب کنید --</option>';
+  
+  const filterSelect = document.getElementById('filter-assignee');
+  const currentFilter = filterSelect.value;
+  filterSelect.innerHTML = '<option value="">همه افراد</option>';
+
   allMembers.forEach(m => {
     select.innerHTML += `<option value="${m.id}">${escapeHtml(m.name)}${m.chatId ? ' - '+escapeHtml(m.chatId) : ''}</option>`;
+    const selected = (currentFilter === m.name) ? 'selected' : '';
+    filterSelect.innerHTML += `<option value="${escapeHtml(m.name)}" ${selected}>${escapeHtml(m.name)}</option>`;
   });
 
   const list = document.getElementById('members-list');
@@ -228,12 +235,19 @@ function onAssigneeChange() {
 // ─── Render admin tasks list ──────────────────────────────────────────────
 function renderAdminList() {
   const container = document.getElementById('admin-tasks-list');
-  if (!allTasks.length) {
+  const filterVal = document.getElementById('filter-assignee').value;
+  
+  let filteredTasks = allTasks;
+  if (filterVal) {
+    filteredTasks = allTasks.filter(t => t.assigneeName === filterVal);
+  }
+
+  if (!filteredTasks.length) {
     container.innerHTML = `
       <div class="empty-state" style="padding:3rem">
         <div class="empty-icon">📭</div>
-        <div class="empty-title">هنوز وظیفه‌ای ثبت نشده</div>
-        <div class="empty-subtitle">از فرم بالا وظیفه جدید بسازید</div>
+        <div class="empty-title">وظیفه‌ای یافت نشد</div>
+        <div class="empty-subtitle">هیچ موردی برای نمایش وجود ندارد</div>
       </div>`;
     return;
   }
@@ -254,7 +268,7 @@ function renderAdminList() {
           </tr>
         </thead>
         <tbody>
-          ${allTasks.map(task => renderTaskRow(task, now)).join('')}
+          ${filteredTasks.map(task => renderTaskRow(task, now)).join('')}
         </tbody>
       </table>
     </div>
