@@ -284,6 +284,9 @@ const server = http.createServer(async (req, res) => {
     if (body.status) task.status = body.status;
     if (body.title) task.title = body.title;
     if (body.description !== undefined) task.description = body.description;
+    if (body.note !== undefined) task.note = body.note;
+    if (body.assigneeName !== undefined) task.assigneeName = body.assigneeName;
+    if (body.assigneeChatId !== undefined) task.assigneeChatId = body.assigneeChatId;
     if (body.deadline) {
       try { task.dueAt = parseDueAt(body.deadline).toISOString(); }
       catch (e) { return sendJSON(res, 400, { ok: false, error: e.message }); }

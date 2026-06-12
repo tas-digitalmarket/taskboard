@@ -101,6 +101,14 @@ function renderCard(task) {
       <span class="assignee-name">👤 ${escapeHtml(task.assigneeName)}</span>
     </div>
 
+    <div class="note-section" style="margin-top:12px; padding:10px; background:var(--bg-input); border-radius:6px; border:1px solid var(--border)">
+      <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px; font-weight:600">📝 یادداشت وظیفه:</div>
+      <div style="display:flex; gap:6px">
+        <textarea id="note-input-${task.id}" class="form-control" style="font-size:0.8rem; padding:6px; min-height:36px; height:36px; resize:vertical; flex:1" placeholder="یادداشت خود را بنویسید...">${escapeHtml(task.note || '')}</textarea>
+        <button class="btn btn-primary btn-sm" style="padding:0 10px" onclick="updateNote(${task.id})">💾</button>
+      </div>
+    </div>
+
     <div class="progress-section">
       <div class="progress-header">
         <span class="progress-label">پیشرفت زمانی</span>
@@ -211,6 +219,14 @@ function renderDashboard() {
         badge.className = `status-badge ${task.status}`;
         badge.textContent = `${sInfo.icon} ${sInfo.label}`;
       }
+      
+      // Update note ONLY if the user isn't currently typing in it
+      const noteInput = document.getElementById(`note-input-${task.id}`);
+      if (noteInput && document.activeElement !== noteInput) {
+        if (noteInput.value !== (task.note || '')) {
+          noteInput.value = task.note || '';
+        }
+      }
     } else {
       const card = renderCard(task);
       card.style.animationDelay = `${idx * 0.05}s`;
@@ -290,6 +306,38 @@ async function updateStatus(id, status) {
     }
   } catch (err) {
     showToast('❌ خطا در بروزرسانی', 'error');
+  }
+}
+
+// ─── Update task note ─────────────────────────────────────────────────────
+async function updateNote(id) {
+  const input = document.getElementById(`note-input-${id}`);
+  if (!input) return;
+  const note = input.value.trim();
+  const btn = input.nextElementSibling;
+  const oldText = btn.textContent;
+  btn.textContent = '⏳';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API}/api/tasks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      const idx = allTasks.findIndex(t => t.id === id);
+      if (idx !== -1) allTasks[idx].note = note;
+      showToast('✅ یادداشت ذخیره شد', 'success');
+    } else {
+      showToast('❌ خطا در ذخیره یادداشت', 'error');
+    }
+  } catch (err) {
+    showToast('❌ خطا در ارتباط', 'error');
+  } finally {
+    btn.textContent = oldText;
+    btn.disabled = false;
   }
 }
 

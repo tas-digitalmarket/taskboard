@@ -126,9 +126,14 @@
         <div id="members-list" style="margin-top:1.5rem;display:grid;gap:8px"></div>
       </div>
 
-      <div class="section-header">
+      <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
         <span class="section-title">مدیریت وظایف</span>
-        <button class="btn btn-ghost btn-sm" onclick="loadTasks()">🔄 بروزرسانی</button>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <select id="filter-assignee" class="form-control" style="width:auto; padding:4px 8px; font-size:0.85rem;" onchange="renderAdminList()">
+            <option value="">همه افراد</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="loadTasks()">🔄 بروزرسانی</button>
+        </div>
       </div>
       <div id="admin-tasks-list"></div>
     </div>
@@ -139,6 +144,42 @@
 <!-- Toast -->
 <div class="toast-container" id="toast-container"></div>
 
-<script src="/admin.js?v=6"></script>
+<!-- Edit Task Modal -->
+<div id="edit-modal" class="modal-overlay">
+  <div class="modal" style="max-width:500px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h2 style="font-size:1.2rem;font-weight:700">✏️ ویرایش وظیفه</h2>
+      <button class="btn btn-ghost btn-sm" onclick="closeEditModal()">❌</button>
+    </div>
+    <form id="edit-form" onsubmit="saveEditTask(event)">
+      <input type="hidden" id="e-id" />
+      <div class="form-group">
+        <label class="form-label">عنوان وظیفه</label>
+        <input type="text" id="e-title" class="form-control" required />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">مسئول وظیفه</label>
+          <select id="e-assignee" class="form-control" onchange="onEditAssigneeChange()"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Chat ID تلگرام</label>
+          <input type="text" id="e-chatid" class="form-control" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">توضیحات</label>
+        <textarea id="e-desc" class="form-control"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">تغییر مهلت (اختیاری)</label>
+        <input type="text" id="e-deadline" class="form-control" placeholder="برای عدم تغییر خالی بگذارید (مثال: 1d)" />
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%" id="e-submit">💾 ذخیره تغییرات</button>
+    </form>
+  </div>
+</div>
+
+<script src="/admin.js?v=7"></script>
 </body>
 </html>

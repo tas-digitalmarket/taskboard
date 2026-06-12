@@ -163,8 +163,22 @@ async function loadMembers() {
 function renderMembersList() {
   const select = document.getElementById('f-assignee-select');
   select.innerHTML = '<option value="">-- انتخاب کنید --</option>';
+  
+  const filterSelect = document.getElementById('filter-assignee');
+  const currentFilter = filterSelect ? filterSelect.value : '';
+  if (filterSelect) filterSelect.innerHTML = '<option value="">همه افراد</option>';
+
+  const editSelect = document.getElementById('e-assignee');
+  if (editSelect) editSelect.innerHTML = '<option value="">-- تیم --</option>';
+
   allMembers.forEach(m => {
-    select.innerHTML += `<option value="${m.id}">${escapeHtml(m.name)}${m.chatId ? ' - '+escapeHtml(m.chatId) : ''}</option>`;
+    const opt = `<option value="${m.id}">${escapeHtml(m.name)}${m.chatId ? ' - '+escapeHtml(m.chatId) : ''}</option>`;
+    select.innerHTML += opt;
+    if (editSelect) editSelect.innerHTML += opt;
+    if (filterSelect) {
+      const selected = (currentFilter === m.name) ? 'selected' : '';
+      filterSelect.innerHTML += `<option value="${escapeHtml(m.name)}" ${selected}>${escapeHtml(m.name)}</option>`;
+    }
   });
 
   const list = document.getElementById('members-list');
@@ -236,12 +250,20 @@ function onAssigneeChange() {
 // ─── Render admin tasks list ──────────────────────────────────────────────
 function renderAdminList() {
   const container = document.getElementById('admin-tasks-list');
-  if (!allTasks.length) {
+  const filterSelect = document.getElementById('filter-assignee');
+  const filterVal = filterSelect ? filterSelect.value : '';
+  
+  let filteredTasks = allTasks;
+  if (filterVal) {
+    filteredTasks = allTasks.filter(t => t.assigneeName === filterVal);
+  }
+
+  if (!filteredTasks.length) {
     container.innerHTML = `
       <div class="empty-state" style="padding:3rem">
         <div class="empty-icon">📭</div>
-        <div class="empty-title">هنوز وظیفه‌ای ثبت نشده</div>
-        <div class="empty-subtitle">از فرم بالا وظیفه جدید بسازید</div>
+        <div class="empty-title">وظیفه‌ای یافت نشد</div>
+        <div class="empty-subtitle">یا هنوز ثبت نشده یا با فیلتر مطابقت ندارد</div>
       </div>`;
     return;
   }
@@ -262,7 +284,7 @@ function renderAdminList() {
           </tr>
         </thead>
         <tbody>
-          ${allTasks.map(task => renderTaskRow(task, now)).join('')}
+          ${filteredTasks.map(task => renderTaskRow(task, now)).join('')}
         </tbody>
       </table>
     </div>
@@ -292,7 +314,8 @@ function renderTaskRow(task, now = new Date()) {
         onmouseleave="this.style.background=''">
       <td style="padding:14px 16px">
         <div style="font-weight:600; color:var(--text-primary); margin-bottom:3px">${escapeHtml(task.title)}</div>
-        ${task.description ? `<div style="color:var(--text-muted);font-size:0.78rem">${escapeHtml(task.description.slice(0,60))}${task.description.length>60?'...':''}</div>` : ''}
+        ${task.description ? `<div style="color:var(--text-muted);font-size:0.78rem;margin-bottom:4px">${escapeHtml(task.description.slice(0,60))}${task.description.length>60?'...':''}</div>` : ''}
+        ${task.note ? `<div style="background:rgba(255,193,7,0.1);color:#fbbf24;padding:4px 6px;border-radius:4px;font-size:0.75rem;border:1px solid rgba(255,193,7,0.2)">📝 ${escapeHtml(task.note)}</div>` : ''}
       </td>
       <td style="padding:14px 16px; color:var(--text-secondary)">
         <div style="display:flex;align-items:center;gap:6px">
@@ -325,7 +348,10 @@ function renderTaskRow(task, now = new Date()) {
         </div>
       </td>
       <td style="padding:14px 16px; text-align:center">
-        <button class="btn btn-danger btn-sm" onclick="deleteTask(${task.id}, '${escapeHtml(task.title)}')">🗑 حذف</button>
+        <div style="display:flex;gap:4px;justify-content:center">
+          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:0.8rem;background:var(--bg-input)" onclick="openEditModal(${task.id})">✏️ ویرایش</button>
+          <button class="btn btn-danger btn-sm" style="padding:4px 8px;font-size:0.8rem" onclick="deleteTask(${task.id}, '${escapeHtml(task.title)}')">🗑 حذف</button>
+        </div>
       </td>
     </tr>
   `;
@@ -366,6 +392,84 @@ async function deleteTask(id, title) {
     }
   } catch (err) {
     showToast('❌ خطا در حذف', 'error');
+  }
+}
+
+// ─── Edit Task Modal ──────────────────────────────────────────────────────
+function openEditModal(id) {
+  const task = allTasks.find(t => t.id === id);
+  if (!task) return;
+
+  document.getElementById('e-id').value = task.id;
+  document.getElementById('e-title').value = task.title;
+  document.getElementById('e-desc').value = task.description || '';
+  document.getElementById('e-deadline').value = '';
+
+  const select = document.getElementById('e-assignee');
+  const member = allMembers.find(m => m.name === task.assigneeName);
+  if (member) {
+    select.value = member.id;
+    document.getElementById('e-chatid').value = task.assigneeChatId || '';
+  } else {
+    select.value = '';
+    document.getElementById('e-chatid').value = '';
+  }
+
+  document.getElementById('edit-modal').classList.add('active');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('active');
+}
+
+function onEditAssigneeChange() {
+  const sel = document.getElementById('e-assignee');
+  const id = Number(sel.value);
+  const mem = allMembers.find(m => m.id === id);
+  if (mem) {
+    document.getElementById('e-chatid').value = mem.chatId || '';
+  } else {
+    document.getElementById('e-chatid').value = '';
+  }
+}
+
+async function saveEditTask(e) {
+  e.preventDefault();
+  const id = document.getElementById('e-id').value;
+  const title = document.getElementById('e-title').value.trim();
+  const desc = document.getElementById('e-desc').value.trim();
+  const deadline = document.getElementById('e-deadline').value.trim();
+  
+  const select = document.getElementById('e-assignee');
+  const assigneeName = select.options[select.selectedIndex]?.text.split(' - ')[0].trim() || 'تیم';
+  const assigneeChatId = document.getElementById('e-chatid').value.trim();
+
+  const payload = { title, description: desc, assigneeName, assigneeChatId: assigneeChatId || null };
+  if (deadline) payload.deadline = deadline;
+
+  const btn = document.getElementById('e-submit');
+  btn.disabled = true;
+  btn.textContent = '⏳ ...';
+
+  try {
+    const res = await fetch(`${API}/api/tasks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showToast('✅ تغییرات ذخیره شد', 'success');
+      closeEditModal();
+      loadTasks();
+    } else {
+      showToast('❌ ' + (data.error || 'خطا در ویرایش'), 'error');
+    }
+  } catch (err) {
+    showToast('❌ خطا در ارتباط با سرور', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 ذخیره تغییرات';
   }
 }
 
