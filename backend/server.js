@@ -136,7 +136,7 @@ async function sendNotification(task) {
     `*Progress:* [${prog.bar}] ${prog.percent}%`,
     ``,
     `Dashboard command: /tasks`,
-    `\n🌐 [View Dashboard](https://taskboard-tp8k.onrender.com/)`
+    `\n🌐 [View Dashboard](${WEBHOOK_BASE})`
   ].filter(Boolean).join("\n");
 
   await telegramApi("sendMessage", {
@@ -383,7 +383,7 @@ async function handleTelegramUpdate(update) {
     await telegramApi("editMessageText", {
       chat_id: message.chat.id,
       message_id: message.message_id,
-      text: `✅ Status changed to «${newStatus}»\n📊 [${prog.bar}] ${prog.percent}%\n⏱ ${remaining(task)}\n\n🌐 [View Dashboard](https://taskboard-tp8k.onrender.com/)`,
+      text: `✅ Status changed to «${newStatus}»\n📊 [${prog.bar}] ${prog.percent}%\n⏱ ${remaining(task)}\n\n🌐 [View Dashboard](${WEBHOOK_BASE})`,
       parse_mode: "Markdown",
     });
     return;
@@ -469,7 +469,7 @@ async function handleTelegramUpdate(update) {
     const now = new Date();
     for (const t of myTasks) {
       const prog = progress(t, now);
-      await reply(`📌 *${t.title}*\n${t.description || ""}\n\n[${prog.bar}] ${prog.percent}%\n⏱ ${remaining(t, now)}\n\n🌐 [View Dashboard](https://taskboard-tp8k.onrender.com/)`, {
+      await reply(`📌 *${t.title}*\n${t.description || ""}\n\n[${prog.bar}] ${prog.percent}%\n⏱ ${remaining(t, now)}\n\n🌐 [View Dashboard](${WEBHOOK_BASE})`, {
         reply_markup: {
           inline_keyboard: [[
             { text: "▶️ Start", callback_data: `status:${t.id}:started` },
